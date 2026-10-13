@@ -1,0 +1,211 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="color-scheme" content="light dark" />
+  <meta name="theme-color" content="#101311" />
+  <link rel="icon" href="data:," />
+  <title>MP3 to MP4 Converter</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Manrope:wght@600;700;800&display=swap');
+    :root {
+      color-scheme: light dark;
+      --bg: #eef1e9; --surface: #ffffff; --surface-2: #e1e7dc; --ink: #111612;
+      --muted: #526057; --line: #c7d0c7; --accent: #0d7051; --accent-ink: #f8fff9;
+      --accent-soft: #c9f0df; --danger: #a33a2a; --shadow: 0 22px 55px rgba(25,42,31,.12);
+    }
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --bg: #0d100e; --surface: #151a17; --surface-2: #202820; --ink: #eff5ed;
+        --muted: #aebbb1; --line: #39443c; --accent: #aee95f; --accent-ink: #10150d;
+        --accent-soft: #26391f; --danger: #ff8c7a; --shadow: 0 28px 70px rgba(0,0,0,.35);
+      }
+    }
+    * { box-sizing: border-box; }
+    html { min-height: 100%; background: var(--bg); }
+    body {
+      margin: 0; min-height: 100vh; color: var(--ink);
+      background: linear-gradient(90deg,color-mix(in srgb,var(--line) 30%,transparent) 1px,transparent 1px) 0 0/44px 44px,
+                  linear-gradient(color-mix(in srgb,var(--line) 30%,transparent) 1px,transparent 1px) 0 0/44px 44px,var(--bg);
+      font-family: "DM Sans",sans-serif;
+    }
+    button,input,select { font: inherit; }
+    button { -webkit-tap-highlight-color: transparent; }
+    .shell { width: min(1080px,calc(100% - 32px)); margin: 0 auto; padding: clamp(26px,6vw,72px) 0 48px; }
+    .intro { display: grid; grid-template-columns: minmax(0,1.3fr) minmax(250px,.7fr); gap: 28px; align-items: end; margin-bottom: 30px; }
+    h1,h2,.step-num,.status-title { font-family: "Manrope",sans-serif; }
+    h1 { margin: 0; max-width: 760px; font-size: clamp(2.25rem,6.2vw,5.65rem); line-height: .98; letter-spacing: -.065em; font-weight: 800; }
+    .intro-copy { margin: 0 0 7px; color: var(--muted); font-size: 1.04rem; line-height: 1.65; max-width: 38ch; }
+    .workbench { background: var(--surface); border: 1px solid var(--line); box-shadow: var(--shadow); display: grid; grid-template-columns: minmax(0,1.25fr) minmax(310px,.75fr); min-height: 500px; }
+    .main-panel { padding: clamp(22px,4vw,46px); }
+    .side-panel { padding: clamp(22px,3vw,34px); background: var(--surface-2); border-left: 1px solid var(--line); display: flex; flex-direction: column; }
+    .section-head { display: flex; align-items: center; gap: 12px; margin-bottom: 18px; }
+    .step-num { width: 32px; height: 32px; display: grid; place-items: center; color: var(--accent-ink); background: var(--accent); border-radius: 50%; font-weight: 800; font-size: .82rem; flex: 0 0 auto; }
+    h2 { margin: 0; font-size: 1.08rem; letter-spacing: -.02em; }
+    .dropzone { position: relative; min-height: 220px; border: 2px dashed var(--line); background: color-mix(in srgb,var(--surface) 82%,var(--accent-soft)); display: grid; place-items: center; text-align: center; padding: 28px; cursor: pointer; transition: border-color .2s ease,background .2s ease; }
+    .dropzone:hover,.dropzone.dragging,.dropzone:focus-within { border-color: var(--accent); background: var(--accent-soft); }
+    .dropzone { padding-bottom: 88px; }
+    .dropzone input { position: absolute; left: 50%; bottom: 22px; transform: translateX(-50%); width: min(220px,calc(100% - 28px)); height: 42px; cursor: pointer; color: transparent; }
+    .dropzone input::file-selector-button { width: 100%; height: 42px; border: 0; background: var(--accent); color: var(--accent-ink); font-weight: 800; cursor: pointer; }
+    .audio-glyph { display: flex; gap: 5px; align-items: center; justify-content: center; height: 46px; margin-bottom: 15px; }
+    .audio-glyph i { width: 4px; border-radius: 3px; background: var(--accent); display: block; }
+    .audio-glyph i:nth-child(1),.audio-glyph i:nth-child(7) { height: 13px; }
+    .audio-glyph i:nth-child(2),.audio-glyph i:nth-child(6) { height: 26px; }
+    .audio-glyph i:nth-child(3),.audio-glyph i:nth-child(5) { height: 38px; }
+    .audio-glyph i:nth-child(4) { height: 46px; }
+    .drop-title { display: block; font-weight: 700; font-size: 1.05rem; }
+    .drop-sub { display: block; margin-top: 7px; color: var(--muted); font-size: .9rem; }
+    .file-card { display: none; grid-template-columns: auto minmax(0,1fr) auto; gap: 13px; align-items: center; margin-top: 14px; padding: 14px; border: 1px solid var(--line); background: var(--surface); }
+    .file-card.show { display: grid; }
+    .file-icon { width: 42px; height: 42px; border-radius: 50%; background: var(--accent-soft); display: grid; place-items: center; color: var(--accent); }
+    .file-icon svg { width: 19px; height: 19px; }
+    .file-info { min-width: 0; }
+    .file-name { display: block; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .file-meta { display: block; color: var(--muted); font-size: .84rem; margin-top: 2px; }
+    .icon-btn { border: 0; color: var(--muted); background: transparent; cursor: pointer; width: 38px; height: 38px; display: grid; place-items: center; border-radius: 50%; }
+    .icon-btn:hover { background: var(--surface-2); color: var(--danger); }
+    .option-group { margin-bottom: 23px; }
+    .label { display: block; font-weight: 700; font-size: .86rem; margin-bottom: 9px; }
+    .segmented { position: relative; display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+    .segmented input { position: absolute; z-index: 2; top: 50%; transform: translateY(-50%); width: 18px; height: 18px; margin: 0; accent-color: var(--accent); cursor: pointer; }
+    .segmented input:first-of-type { left: 10px; }
+    .segmented input:nth-of-type(2) { left: calc(50% + 14px); }
+    .segmented label { display: block; border: 1px solid var(--line); background: var(--surface); padding: 12px 8px 12px 31px; cursor: pointer; text-align: center; font-weight: 700; font-size: .88rem; }
+    .segmented input:checked + label { color: var(--accent-ink); background: var(--accent); border-color: var(--accent); }
+    select { width: 100%; border: 1px solid var(--line); background: var(--surface); color: var(--ink); padding: 12px 38px 12px 12px; border-radius: 0; }
+    .setting-note { margin: 8px 0 0; font-size: .78rem; line-height: 1.45; color: var(--muted); }
+    .convert-btn,.download-btn { width: 100%; border: 0; min-height: 54px; background: var(--accent); color: var(--accent-ink); font-weight: 800; cursor: pointer; padding: 14px 18px; display: flex; align-items: center; justify-content: center; gap: 10px; }
+    .convert-btn:disabled { opacity: .48; cursor: not-allowed; }
+    .convert-btn:not(:disabled):hover,.download-btn:hover { filter: brightness(1.06); }
+    .tiny-note { margin: 13px 0 0; color: var(--muted); font-size: .79rem; line-height: 1.5; text-align: center; }
+    .status-panel { display: none; margin-top: 24px; padding: 20px; background: #101311; color: #f2f6f0; }
+    .status-panel.show { display: block; }
+    .status-row { display: flex; justify-content: space-between; gap: 16px; align-items: baseline; }
+    .status-title { font-weight: 700; }
+    .status-percent { color: #c7ff71; font-variant-numeric: tabular-nums; font-weight: 700; }
+    .track { height: 7px; background: #343c36; margin: 13px 0 9px; overflow: hidden; }
+    .bar { height: 100%; width: 0%; background: #c7ff71; transition: width .25s ease; }
+    .status-detail { color: #b9c3bb; margin: 0; font-size: .8rem; line-height: 1.4; }
+    .cancel-btn { margin-top: 13px; color: #ffaf92; background: none; border: 0; padding: 0; font-weight: 700; cursor: pointer; }
+    .result { display: none; margin-top: 24px; border: 1px solid var(--accent); padding: 18px; background: var(--accent-soft); }
+    .result.show { display: block; }
+    .result-top { display: flex; gap: 12px; align-items: center; margin-bottom: 15px; }
+    .result-check { width: 34px; height: 34px; flex: 0 0 auto; border-radius: 50%; background: var(--accent); color: var(--accent-ink); display: grid; place-items: center; font-weight: 800; }
+    .result strong { display: block; }
+    .result span { color: var(--muted); font-size: .84rem; }
+    .download-btn { text-decoration: none; }
+    .error { display: none; margin-top: 18px; padding: 14px; color: var(--danger); background: color-mix(in srgb,var(--danger) 10%,var(--surface)); border: 1px solid color-mix(in srgb,var(--danger) 45%,var(--line)); font-size: .9rem; line-height: 1.45; }
+    .error.show { display: block; }
+    .how { display: grid; grid-template-columns: repeat(3,1fr); gap: 1px; margin-top: 30px; background: var(--line); border: 1px solid var(--line); }
+    .how article { background: var(--surface); padding: 22px; }
+    .how strong { display: block; margin-bottom: 6px; }
+    .how p { margin: 0; color: var(--muted); line-height: 1.5; font-size: .9rem; }
+    footer { color: var(--muted); text-align: center; font-size: .8rem; padding-top: 24px; }
+    @media (max-width:760px) {
+      .shell { width: min(100% - 20px,650px); padding-top: 26px; }
+      .intro,.workbench { grid-template-columns: 1fr; }
+      .intro { gap: 15px; align-items: start; }
+      h1 { font-size: clamp(2.45rem,14vw,4.2rem); max-width: 10ch; }
+      .intro-copy { margin: 0; }
+      .side-panel { border-left: 0; border-top: 1px solid var(--line); }
+      .dropzone { min-height: 185px; padding: 20px 14px; }
+      .how { grid-template-columns: 1fr; }
+    }
+    @media (prefers-reduced-motion:reduce) { * { transition: none !important; } }
+  </style>
+</head>
+<body>
+  <main class="shell">
+    <section class="intro" aria-labelledby="page-title">
+      <h1 id="page-title">Apni MP3 ko video banayein.</h1>
+      <p class="intro-copy">Audio upload karein, YouTube ya square size chunein, aur animated waveform ke sath MP4 download karein.</p>
+    </section>
+    <section class="workbench" aria-label="MP3 se MP4 converter">
+      <div class="main-panel">
+        <div class="section-head"><span class="step-num">1</span><h2>MP3 file select karein</h2></div>
+        <label class="dropzone" id="dropzone">
+          <input id="audioInput" type="file" accept="audio/mpeg,.mp3" aria-label="MP3 file select karein" />
+          <span><span class="audio-glyph" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i></i><i></i></span><span class="drop-title">MP3 yahan drop karein ya tap karein</span><span class="drop-sub">Ek waqt mein ek file · behtar nateeje ke liye 100 MB se kam</span></span>
+        </label>
+        <div class="file-card" id="fileCard">
+          <span class="file-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18V5l11-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="17" cy="16" r="3"/></svg></span>
+          <span class="file-info"><span class="file-name" id="fileName"></span><span class="file-meta" id="fileMeta"></span></span>
+          <button class="icon-btn" id="removeFile" type="button" aria-label="File hata dein">✕</button>
+        </div>
+        <div class="status-panel" id="statusPanel" role="status" aria-live="polite">
+          <div class="status-row"><span class="status-title" id="statusTitle">Converter tayyar ho raha hai…</span><span class="status-percent" id="statusPercent">0%</span></div>
+          <div class="track"><div class="bar" id="progressBar"></div></div>
+          <p class="status-detail" id="statusDetail">Pehli dafa conversion engine download hota hai. Tab khula rakhein.</p>
+          <button class="cancel-btn" id="cancelBtn" type="button">Conversion rok dein</button>
+        </div>
+        <div class="result" id="resultPanel">
+          <div class="result-top"><span class="result-check">✓</span><span><strong>Video ready hai</strong><span id="resultMeta">MP4 download ke liye tayyar</span></span></div>
+          <a class="download-btn" id="downloadBtn" href="#" download>MP4 download karein</a>
+        </div>
+        <div class="error" id="errorBox" role="alert"></div>
+      </div>
+      <aside class="side-panel">
+        <div class="section-head"><span class="step-num">2</span><h2>Video settings</h2></div>
+        <div class="option-group">
+          <span class="label">Frame</span>
+          <div class="segmented"><input id="wide" type="radio" name="ratio" value="wide" checked /><label for="wide">16:9 · YouTube</label><input id="square" type="radio" name="ratio" value="square" /><label for="square">1:1 · Square</label></div>
+        </div>
+        <div class="option-group">
+          <label class="label" for="quality">Quality</label>
+          <select id="quality"><option value="fast" selected>480p · Fast</option><option value="hd">720p · HD</option></select>
+          <p class="setting-note">HD phone par zyada waqt aur memory le sakti hai.</p>
+        </div>
+        <div class="option-group">
+          <span class="label">Video style</span>
+          <div class="segmented"><input id="green" type="radio" name="theme" value="green" checked /><label for="green">Lime wave</label><input id="gold" type="radio" name="theme" value="gold" /><label for="gold">Golden wave</label></div>
+        </div>
+        <div style="margin-top:auto">
+          <button class="convert-btn" id="convertBtn" type="button" disabled><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="m5 12 5 5L20 7"/></svg>MP4 banayein</button>
+          <p class="tiny-note">Conversion isi device par hoti hai. File kahin upload nahi hoti.</p>
+        </div>
+      </aside>
+    </section>
+    <section class="how" aria-label="Istemaal ka tareeqa">
+      <article><strong>1. MP3 chunein</strong><p>Phone ya computer se apni audio file select karein.</p></article>
+      <article><strong>2. Size set karein</strong><p>YouTube ke liye 16:9 ya social post ke liye square.</p></article>
+      <article><strong>3. Download karein</strong><p>Animated waveform wali MP4 seedha device par save karein.</p></article>
+    </section>
+    <footer>Long audio ka conversion real time se zyada bhi le sakta hai; conversion ke dauran screen khuli rakhein.</footer>
+  </main>
+  <script src="https://unpkg.com/@ffmpeg/ffmpeg@0.11.6/dist/ffmpeg.min.js" crossorigin="anonymous"></script>
+  <script>
+    (function(){
+      'use strict';
+      var audioInput=document.getElementById('audioInput'),dropzone=document.getElementById('dropzone'),fileCard=document.getElementById('fileCard'),fileName=document.getElementById('fileName'),fileMeta=document.getElementById('fileMeta'),removeFile=document.getElementById('removeFile'),convertBtn=document.getElementById('convertBtn'),statusPanel=document.getElementById('statusPanel'),statusTitle=document.getElementById('statusTitle'),statusPercent=document.getElementById('statusPercent'),statusDetail=document.getElementById('statusDetail'),progressBar=document.getElementById('progressBar'),cancelBtn=document.getElementById('cancelBtn'),resultPanel=document.getElementById('resultPanel'),resultMeta=document.getElementById('resultMeta'),downloadBtn=document.getElementById('downloadBtn'),errorBox=document.getElementById('errorBox');
+      var selectedFile=null,ffmpeg=null,objectUrl=null,cancelled=false;
+      function humanSize(bytes){return bytes<1048576?(bytes/1024).toFixed(1)+' KB':(bytes/1048576).toFixed(1)+' MB';}
+      function resetOutput(){resultPanel.classList.remove('show');errorBox.classList.remove('show');errorBox.textContent='';if(objectUrl){URL.revokeObjectURL(objectUrl);objectUrl=null;}}
+      function showError(message){errorBox.textContent=message;errorBox.classList.add('show');}
+      function chooseFile(file){resetOutput();if(!file)return;var isMp3=file.type==='audio/mpeg'||/\.mp3$/i.test(file.name);if(!isMp3){showError('Sirf MP3 file select karein.');audioInput.value='';return;}if(file.size>100*1048576){showError('Yeh file 100 MB se bari hai. Choti MP3 file try karein.');audioInput.value='';return;}selectedFile=file;fileName.textContent=file.name;fileMeta.textContent=humanSize(file.size)+' · MP3 audio';fileCard.classList.add('show');convertBtn.disabled=false;}
+      function clearFile(){selectedFile=null;audioInput.value='';fileCard.classList.remove('show');convertBtn.disabled=true;resetOutput();}
+      function setProgress(value,title,detail){var percent=Math.max(0,Math.min(100,Math.round(value)));progressBar.style.width=percent+'%';statusPercent.textContent=percent+'%';if(title)statusTitle.textContent=title;if(detail)statusDetail.textContent=detail;}
+      audioInput.addEventListener('change',function(){chooseFile(audioInput.files[0]);});removeFile.addEventListener('click',clearFile);
+      ['dragenter','dragover'].forEach(function(name){dropzone.addEventListener(name,function(event){event.preventDefault();dropzone.classList.add('dragging');});});
+      ['dragleave','drop'].forEach(function(name){dropzone.addEventListener(name,function(event){event.preventDefault();dropzone.classList.remove('dragging');});});
+      dropzone.addEventListener('drop',function(event){if(event.dataTransfer.files.length)chooseFile(event.dataTransfer.files[0]);});
+      cancelBtn.addEventListener('click',function(){cancelled=true;if(ffmpeg&&ffmpeg.isLoaded()){try{ffmpeg.exit();}catch(e){}}ffmpeg=null;statusPanel.classList.remove('show');convertBtn.disabled=false;showError('Conversion rok di gayi. Aap dobara try kar sakte hain.');});
+      convertBtn.addEventListener('click',async function(){
+        if(!selectedFile)return;resetOutput();cancelled=false;convertBtn.disabled=true;statusPanel.classList.add('show');setProgress(1,'Converter tayyar ho raha hai…','Pehli dafa conversion engine download hota hai. Tab khula rakhein.');
+        try{
+          if(!window.FFmpeg)throw new Error('Engine load nahi hua.');var createFFmpeg=window.FFmpeg.createFFmpeg,fetchFile=window.FFmpeg.fetchFile;
+          if(!ffmpeg){ffmpeg=createFFmpeg({log:false,corePath:'https://unpkg.com/@ffmpeg/core-st@0.11.1/dist/ffmpeg-core.js'});ffmpeg.setProgress(function(progress){if(!cancelled&&typeof progress.ratio==='number'&&isFinite(progress.ratio))setProgress(10+progress.ratio*88,'MP4 ban rahi hai…','Audio ki lambai aur quality ke mutabiq waqt lag sakta hai.');});}
+          if(!ffmpeg.isLoaded())await ffmpeg.load();if(cancelled)return;setProgress(8,'Audio tayyar ki ja rahi hai…','File device ke andar process ho rahi hai.');
+          var inputName='input.mp3',outputName='converted.mp4';ffmpeg.FS('writeFile',inputName,await fetchFile(selectedFile));
+          var ratio=document.querySelector('input[name="ratio"]:checked').value,quality=document.getElementById('quality').value,theme=document.querySelector('input[name="theme"]:checked').value;
+          var size=ratio==='square'?(quality==='hd'?'720x720':'480x480'):(quality==='hd'?'1280x720':'854x480'),dims=size.split('x'),waveWidth=Math.round(parseInt(dims[0],10)*.78),waveHeight=Math.round(parseInt(dims[1],10)*.32),waveColor=theme==='gold'?'0xffb44a':'0xc7ff71',bgColor=theme==='gold'?'0x18120c':'0x101512',videoBitrate=quality==='hd'?'1100k':'650k',bufferSize=quality==='hd'?'2200k':'1300k';
+          var filter='[0:a]showwaves=s='+waveWidth+'x'+waveHeight+':mode=line:rate=15:colors='+waveColor+',format=yuv420p,pad='+dims[0]+':'+dims[1]+':(ow-iw)/2:(oh-ih)/2:'+bgColor+'[v]';
+          await ffmpeg.run('-filter_threads','1','-filter_complex_threads','1','-i',inputName,'-filter_complex',filter,'-map','[v]','-map','0:a','-c:v','libx264','-preset','ultrafast','-threads','1','-r','15','-g','30','-b:v',videoBitrate,'-maxrate',videoBitrate,'-bufsize',bufferSize,'-c:a','aac','-b:a','96k','-pix_fmt','yuv420p','-movflags','+faststart','-shortest',outputName);
+          if(cancelled)return;var data=ffmpeg.FS('readFile',outputName),blob=new Blob([data.buffer],{type:'video/mp4'});objectUrl=URL.createObjectURL(blob);downloadBtn.href=objectUrl;downloadBtn.download=selectedFile.name.replace(/\.mp3$/i,'')+'-video.mp4';resultMeta.textContent=humanSize(blob.size)+' · '+(ratio==='wide'?'16:9':'1:1')+' MP4';setProgress(100,'MP4 ready hai','Neeche download button par tap karein.');statusPanel.classList.remove('show');resultPanel.classList.add('show');try{ffmpeg.FS('unlink',inputName);ffmpeg.FS('unlink',outputName);}catch(e){}
+        }catch(error){if(!cancelled){statusPanel.classList.remove('show');var message=error&&error.message?error.message:String(error);if(/memory|abort|allocation/i.test(message))showError('Device memory kam par gayi. 480p quality ya choti MP3 ke sath dobara try karein.');else if(/network|fetch|load|engine/i.test(message))showError('Conversion engine load nahi ho saka. Internet connection check karke dobara try karein.');else showError('Video nahi ban saki. 480p quality ke sath dobara try karein, ya MP3 file check karein.');}}
+        finally{if(!cancelled)convertBtn.disabled=false;}
+      });
+    })();
+  </script>
+</body>
+</html>
